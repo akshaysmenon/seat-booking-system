@@ -4,10 +4,16 @@ This folder contains the Node.js backend for the seat booking system. It follows
 
 ## Getting Started
 
-Install dependencies and start the server:
+Install dependencies and generate the Prisma client:
 
 ```bash
 npm install
+npx prisma generate
+```
+
+Then start the server:
+
+```bash
 npm start
 ```
 
