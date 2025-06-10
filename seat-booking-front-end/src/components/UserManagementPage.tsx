@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   Box,
@@ -10,8 +10,30 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useAppDispatch, useAppSelector } from '../hooks'
-import { addUser, fetchUsers, selectUser } from '../features/usersSlice'
+import {
+  useGetUsersQuery,
+  useCreateUserMutation,
+  User,
+} from '../api/rest/user'
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query'
+import type { SerializedError } from '@reduxjs/toolkit'
+
+const getErrorMessage = (
+  err: FetchBaseQueryError | SerializedError | undefined,
+): string | null => {
+  if (!err) return null
+  if ('status' in err) {
+    if (typeof err.data === 'string') return err.data
+    if (
+      err.data &&
+      typeof (err.data as { message?: string }).message === 'string'
+    ) {
+      return (err.data as { message?: string }).message as string
+    }
+    return JSON.stringify(err.data)
+  }
+  return err.message ?? null
+}
 
 type UserFormInputs = {
   firstName: string
@@ -20,8 +42,9 @@ type UserFormInputs = {
 }
 
 export default function UserManagementPage() {
-  const dispatch = useAppDispatch()
-  const { users, selectedUser, status, error } = useAppSelector((state) => state.users)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const { data: users = [], error } = useGetUsersQuery()
+  const [createUser] = useCreateUserMutation()
 
   const {
     register,
@@ -33,12 +56,6 @@ export default function UserManagementPage() {
   })
 
   useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchUsers())
-    }
-  }, [dispatch, status])
-
-  useEffect(() => {
     if (selectedUser) {
       reset(selectedUser)
     } else {
@@ -46,8 +63,9 @@ export default function UserManagementPage() {
     }
   }, [selectedUser, reset])
 
-  const onSubmit = handleSubmit((data: UserFormInputs) => {
-    dispatch(addUser(data))
+  const onSubmit = handleSubmit(async (data: UserFormInputs) => {
+    await createUser(data).unwrap()
+    setSelectedUser(null)
     reset()
   })
 
@@ -56,9 +74,9 @@ export default function UserManagementPage() {
       <Typography variant="h4" gutterBottom>
         User Management
       </Typography>
-      {error && (
+      {getErrorMessage(error) && (
         <Typography color="error" gutterBottom>
-          {error}
+          {getErrorMessage(error)}
         </Typography>
       )}
       <Grid container spacing={4} alignItems="flex-start">
@@ -109,7 +127,7 @@ export default function UserManagementPage() {
                 <ListItem
                   key={user.id}
                   button
-                  onClick={() => dispatch(selectUser(user.id))}
+                  onClick={() => setSelectedUser(user)}
                 >
                   {user.firstName} {user.lastName}
                 </ListItem>
