@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -14,28 +14,30 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+
   backend:
     build:
       context: ./seat-booking-backend
     container_name: sbs_backend
     restart: always
     environment:
-      DATABASE_URL: postgres://myuser:mypassword@postgres:5432/mydb
+      DATABASE_URL: postgres://akshay:letmein@postgres:5432/nexusdb
       NODE_ENV: development
     ports:
       - "3000:3000"
     depends_on:
       - postgres
-
-  frontend:
-    build:
-      context: ./seat-booking-front-end
-    container_name: sbs_frontend
-    restart: always
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
 
 volumes:
   pgdata:
